@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Aprendamos practicando! - Frases Adverbiales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+    />
+    <style>
+        /* Estilo personalizado para simular botón 3D */
+        .btn-3d {
+            position: relative;
+            border: none;
+            transition: all 0.1s ease-in-out;
+            box-shadow: 0 5px 0 #1e40af; /* Sombra más oscura para efecto 3D */
+        }
+        .btn-3d:active {
+            top: 3px; /* Mover hacia abajo al hacer clic */
+            box-shadow: 0 2px 0 #1e40af; /* Reducir sombra al hacer clic */
+        }
+        /* Fondo degradado */
+        .gradient-bg {
+            background: linear-gradient(135deg, #e9d5ff, #fed7aa, #fef08a); /* Morado suave, Naranja suave, Amarillo suave */
+        }
+        /* Estilo para opciones */
+        .option-box {
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            cursor: pointer;
+        }
+        .option-box:hover {
+            transform: scale(1.03);
+        }
+        .correct {
+            background-color: #10b981 !important; /* Verde */
+            color: white !important;
+        }
+        .incorrect {
+            background-color: #ef4444 !important; /* Rojo */
+            color: white !important;
+        }
+        /* Estilo para fuente (usando la pila sans-serif de Tailwind que incluye Aptos si está disponible) */
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; /* Tailwind's font-sans stack */
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex flex-col items-center justify-center p-4 font-sans">
+
+    <div id="welcome-screen" class="text-center p-8 bg-white/80 rounded-lg shadow-xl animate__animated animate__fadeIn">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">Practica y mejora tus habilidades de inglés jurídico.</h1>
+        <p class="text-lg text-gray-600 mb-8">¡Prepárate para dominar las frases adverbiales!</p>
+        <button id="start-button" class="btn-3d bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg">
+            Comenzar
+        </button>
+    </div>
+
+    <div id="practice-screen" class="hidden w-full max-w-3xl p-6 md:p-8 bg-white/90 rounded-lg shadow-xl animate__animated">
+        <div class="flex justify-between items-center mb-4">
+            <p class="text-lg font-semibold text-indigo-700">Adelante, comencemos a practicar</p>
+            <div class="text-right">
+                <p class="text-sm text-gray-600">Tiempo restante:</p>
+                <div id="timer" class="text-2xl font-bold text-red-600">1:00</div>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <p id="sentence" class="text-xl md:text-2xl text-gray-800 leading-relaxed"></p>
+        </div>
+
+        <div id="options-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            </div>
+
+        <div id="feedback-message" class="mt-4 text-center text-lg font-medium text-purple-700 min-h-[3em]">
+            </div>
+
+        <div class="mt-6 text-center text-sm text-gray-500">
+            Pregunta <span id="current-question-number">1</span> de <span id="total-questions">15</span>
+        </div>
+    </div>
+
+    <div id="results-screen" class="hidden text-center p-8 bg-white/80 rounded-lg shadow-xl animate__animated">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">¡Práctica completada!</h2>
+        <p class="text-xl text-gray-700 mb-6">Tu puntuación: <span id="score" class="font-bold text-blue-600">0</span> de <span id="total-score">15</span> aciertos.</p>
+        <p class="text-lg text-gray-600 mb-8">Recuerda, entre más practiques, tu habilidad y entendimiento mejorarán notablemente.</p>
+        <button id="restart-button" class="btn-3d bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg">
+            Intentar de nuevo
+        </button>
+    </div>
+
+    <script>
+        // --- Elementos del DOM ---
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const practiceScreen = document.getElementById('practice-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startButton = document.getElementById('start-button');
+        const restartButton = document.getElementById('restart-button');
+        const sentenceElement = document.getElementById('sentence');
+        const optionsContainer = document.getElementById('options-container');
+        const timerElement = document.getElementById('timer');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const currentQuestionNumberElement = document.getElementById('current-question-number');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const scoreElement = document.getElementById('score');
+        const totalScoreElement = document.getElementById('total-score');
+
+        // --- Datos de las Preguntas ---
+        // (Sentence: la oración con '__' donde va la frase, Options: array de 3 opciones, Correct: índice de la opción correcta (0, 1, 2))
+        const questions = [
+            { sentence: "The lawyer decided to __ the case due to lack of evidence.", options: ["give up", "look into", "take on"], correct: 0 },
+            { sentence: "We need to __ the contract carefully before signing.", options: ["go over", "put off", "call off"], correct: 0 },
+            { sentence: "The judge asked the witness to __ the events of that night.", options: ["make up", "account for", "bring up"], correct: 1 },
+            { sentence: "Negotiations __ unexpectedly when the parties couldn't agree.", options: ["broke down", "carried on", "showed up"], correct: 0 },
+            { sentence: "The firm will __ the new regulations next month.", options: ["get away with", "catch up on", "roll out"], correct: 2 },
+            { sentence: "Could you please __ the main points of the argument again?", options: ["sum up", "set aside", "turn down"], correct: 0 },
+            { sentence: "The defense attorney tried to __ the prosecution's key witness.", options: ["rule out", "discredit", "back up"], correct: 1 }, // 'discredit' no es phrasal verb, pero es vocabulario legal común. Ajustamos para variedad.
+            { sentence: "They need to __ a solution that satisfies both clients.", options: ["come up with", "run out of", "look down on"], correct: 0 },
+            { sentence: "The meeting was __ until next Tuesday.", options: ["called off", "put off", "taken off"], correct: 1 },
+            { sentence: "It's important to __ all the clauses in the agreement.", options: ["abide by", "fall behind", "get by"], correct: 0 },
+            { sentence: "The paralegal was asked to __ the relevant case files.", options: ["hand in", "look up", "bring about"], correct: 1 },
+            { sentence: "We must __ the possibility of an appeal.", options: ["count on", "figure out", "allow for"], correct: 2 },
+            { sentence: "The company decided to __ its operations in that region.", options: ["wind down", "set up", "take over"], correct: 0 },
+            { sentence: "Can you __ this document for me by tomorrow morning?", options: ["fill in", "draw up", "check out"], correct: 1 },
+            { sentence: "The new evidence might __ the defendant's innocence.", options: ["point to", "give away", "hold up"], correct: 0 }
+        ].sort(() => 0.5 - Math.random()).slice(0, 15); // Barajar y tomar 15
+
+        // --- Mensajes "Inspiracionales" ---
+        const inspirationalMessages = [
+            "¡Excelente! Sigue así.",
+            "¡Buen intento! La práctica hace al maestro.",
+            "¡Correcto! Estás dominando esto.",
+            "No te preocupes, ¡cada error es una lección!",
+            "¡Fantástico! Tu conocimiento legal en inglés está creciendo.",
+            "¡Sigue adelante! La constancia es clave.",
+            "¡Muy bien! Enfócate en el significado.",
+            "¡Ánimo! Estás construyendo una habilidad valiosa.",
+            "¡Perfecto! Esa era la frase correcta.",
+            "¡Casi! Revisa la definición y vuelve a intentarlo.",
+            "¡Impresionante! Demuestras gran entendimiento.",
+            "¡No te rindas! El inglés jurídico requiere práctica.",
+            "¡Lo tienes! Exactamente.",
+            "Un pequeño tropiezo, ¡pero sigues avanzando!",
+            "¡Maravilloso! Tu esfuerzo está dando frutos."
+        ];
+
+        // --- Estado del Juego ---
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timerInterval;
+        let timeLeft = 60; // 1 minuto por pregunta
+        let questionAnswered = false;
+
+        // --- Funciones del Juego ---
+
+        function startTimer() {
+            timeLeft = 60;
+            questionAnswered = false;
+            timerElement.textContent = `1:00`;
+            timerElement.classList.remove('text-red-600'); // Reset color
+            clearInterval(timerInterval); // Limpiar intervalo anterior
+
+            timerInterval = setInterval(() => {
+                if (questionAnswered) return; // Detener si ya se respondió
+
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                if (timeLeft <= 10) {
+                    timerElement.classList.add('text-red-600'); // Cambiar a rojo en los últimos 10 seg
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    feedbackMessageElement.textContent = "¡Se acabó el tiempo!";
+                    feedbackMessageElement.classList.add('animate__animated', 'animate__shakeX');
+                    disableOptions(); // Deshabilitar opciones
+                    // Pasar a la siguiente pregunta después de un breve retraso
+                    setTimeout(nextQuestion, 1500);
+                }
+            }, 1000);
+        }
+
+        function displayQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                showResults();
+                return;
+            }
+
+            questionAnswered = false; // Resetear estado de respuesta
+            const question = questions[currentQuestionIndex];
+            sentenceElement.textContent = question.sentence.replace('__', '______'); // Mostrar espacio en blanco
+            optionsContainer.innerHTML = ''; // Limpiar opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpiar mensaje anterior
+            feedbackMessageElement.classList.remove('animate__animated', 'animate__shakeX', 'animate__pulse');
+
+
+            // Crear botones de opción
+            question.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('option-box', 'bg-black', 'text-orange-400', 'p-4', 'rounded-lg', 'font-semibold', 'text-center', 'hover:bg-gray-800', 'focus:outline-none', 'focus:ring-2', 'focus:ring-offset-2', 'focus:ring-indigo-500');
+                button.dataset.index = index; // Guardar índice para verificar respuesta
+                button.addEventListener('click', handleOptionClick);
+                optionsContainer.appendChild(button);
+            });
+
+            currentQuestionNumberElement.textContent = currentQuestionIndex + 1;
+            totalQuestionsElement.textContent = questions.length;
+            startTimer(); // Iniciar temporizador para la nueva pregunta
+        }
+
+        function handleOptionClick(event) {
+            if (questionAnswered) return; // Evitar múltiples clics
+
+            questionAnswered = true; // Marcar como respondida
+            clearInterval(timerInterval); // Detener el temporizador
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const correctIndex = questions[currentQuestionIndex].correct;
+
+            disableOptions(selectedButton); // Deshabilitar otras opciones
+
+            // Mostrar mensaje inspirador aleatorio
+            const randomMessage = inspirationalMessages[Math.floor(Math.random() * inspirationalMessages.length)];
+            feedbackMessageElement.textContent = randomMessage;
+            feedbackMessageElement.classList.add('animate__animated', 'animate__pulse');
+
+
+            // Verificar respuesta y aplicar estilo
+            if (selectedIndex === correctIndex) {
+                score++;
+                selectedButton.classList.remove('bg-black', 'text-orange-400', 'hover:bg-gray-800');
+                selectedButton.classList.add('correct', 'animate__animated', 'animate__bounceIn');
+            } else {
+                selectedButton.classList.remove('bg-black', 'text-orange-400', 'hover:bg-gray-800');
+                selectedButton.classList.add('incorrect', 'animate__animated', 'animate__shakeX');
+                // Opcional: Resaltar la correcta también
+                 const correctButton = optionsContainer.querySelector(`[data-index="${correctIndex}"]`);
+                 if (correctButton) {
+                     correctButton.classList.remove('bg-black', 'text-orange-400', 'hover:bg-gray-800');
+                     correctButton.classList.add('correct');
+                 }
+            }
+
+            // Pasar a la siguiente pregunta después de un retraso
+            setTimeout(nextQuestion, 2000); // Esperar 2 segundos para ver el feedback
+        }
+
+        function disableOptions(keepActive = null) {
+             const buttons = optionsContainer.querySelectorAll('button');
+             buttons.forEach(button => {
+                 if (button !== keepActive) {
+                     button.disabled = true;
+                     button.style.cursor = 'not-allowed';
+                     button.classList.add('opacity-50');
+                 }
+             });
+        }
+
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            displayQuestion();
+        }
+
+        function showResults() {
+            clearInterval(timerInterval); // Asegurarse de que el último timer esté limpio
+            practiceScreen.classList.add('hidden');
+            practiceScreen.classList.remove('animate__fadeIn');
+            resultsScreen.classList.remove('hidden');
+            resultsScreen.classList.add('animate__animated', 'animate__fadeInUp'); // Animación para resultados
+            scoreElement.textContent = score;
+            totalScoreElement.textContent = questions.length;
+        }
+
+        function startGame() {
+            welcomeScreen.classList.add('hidden');
+            resultsScreen.classList.add('hidden'); // Ocultar resultados si se reinicia
+            practiceScreen.classList.remove('hidden');
+            practiceScreen.classList.add('animate__animated', 'animate__fadeIn'); // Animación para pantalla de práctica
+            currentQuestionIndex = 0;
+            score = 0;
+            // Barajar preguntas de nuevo si se reinicia (opcional, pero bueno para la rejugabilidad)
+            questions.sort(() => 0.5 - Math.random());
+            displayQuestion();
+        }
+
+        // --- Event Listeners ---
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+
+    </script>
+
+</body>
+</html>
